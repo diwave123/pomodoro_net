@@ -6,7 +6,7 @@
     <title>专注番茄钟</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -126,7 +126,13 @@
 
         <!-- ===== Tab2: 待办清单 ===== -->
         <section class="tab-panel" id="panel-todo">
-            <div class="card todo-card">
+            <div class="todo-card">
+                <!-- Page Header -->
+                <div class="todo-page-header">
+                    <h2>待办事项</h2>
+                    <span class="task-count-badge" id="todo-count-badge">0 项任务</span>
+                </div>
+
                 <form id="todo-form" class="todo-input-row">
                     <input type="text" id="todo-input" placeholder="输入任务后按回车添加..." autocomplete="off">
                     <button type="submit" class="add-btn">+</button>
