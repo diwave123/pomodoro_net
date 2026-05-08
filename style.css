@@ -328,7 +328,16 @@ body {
 #panel-timer {
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow-y: auto; /* Allow scroll on small screens */
+    padding-top: 16px;
+    padding-bottom: 90px; /* Clear the fixed bottom nav */
+    /* Scrollbar hidden but functional */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#panel-timer::-webkit-scrollbar {
+    display: none;
 }
 
 #panel-todo, #panel-stats {
@@ -350,7 +359,9 @@ body {
     border: none;
     box-shadow: none;
     width: 100%;
-    max-width: 500px;
+    max-width: 520px;
+    /* Ensure it can shrink without clipping */
+    flex-shrink: 0;
 }
 
 /* 背景装饰光晕 */
@@ -582,23 +593,95 @@ body.running .ring-progress {
     box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
 }
 
-.mini-stats {
+/* ====== Today Status Bar ====== */
+.today-status {
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 32px;
-    width: 100%;
-    margin-top: 16px;
-    background: transparent;
-    padding: 0;
-    border-radius: 0;
+    gap: 20px;
+    margin-top: 20px;
+    flex-shrink: 0;
 }
 
-.mini-stat {
+/* Tomato tally: icons or compact badge */
+.pomo-tally {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: 0 16px;
+    gap: 4px;
+    font-size: 1.1rem;
+    min-height: 24px;
 }
+
+.pomo-tally .pomo-icon {
+    display: inline-block;
+    animation: popIn 0.3s var(--spring-bounce) forwards;
+    opacity: 0;
+}
+
+.pomo-tally .pomo-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 71, 87, 0.1);
+    border: 1px solid rgba(255, 71, 87, 0.2);
+    border-radius: 20px;
+    padding: 3px 10px 3px 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--c-primary-soft);
+}
+
+.pomo-tally.empty::before {
+    content: '—';
+    color: var(--c-text-muted);
+    font-size: 0.8rem;
+    opacity: 0.5;
+}
+
+/* Task status pill — clickable, navigates to Todo tab */
+.task-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface-raised);
+    color: var(--c-text-muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s var(--spring-smooth);
+    white-space: nowrap;
+}
+
+.task-status-pill:hover {
+    border-color: var(--c-primary);
+    color: var(--c-primary-soft);
+    background: rgba(255, 71, 87, 0.06);
+    transform: translateY(-1px);
+}
+
+.task-status-pill:active {
+    transform: scale(0.96);
+}
+
+.task-status-pill.has-tasks {
+    border-color: rgba(255, 71, 87, 0.25);
+    color: var(--c-text);
+    background: rgba(255, 71, 87, 0.05);
+}
+
+.task-status-pill svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+.task-status-pill.has-tasks svg {
+    opacity: 1;
+    stroke: var(--c-primary-soft);
+}
+
 
 .mini-stat strong {
     font-size: 1.25rem;
@@ -981,6 +1064,12 @@ body.running .ring-progress {
     opacity: 0.4;
 }
 
+/* Pomo-reached: actual >= planned but not yet marked done */
+.task-item.pomo-reached {
+    border-color: rgba(255, 71, 87, 0.2);
+    background: rgba(255, 71, 87, 0.03);
+}
+
 .task-check {
     width: 22px;
     height: 22px;
@@ -1022,42 +1111,216 @@ body.running .ring-progress {
 
 .task-meta {
     display: flex;
+    align-items: center;
     gap: 10px;
-    margin-top: 3px;
+    margin-top: 5px;
     font-size: 0.68rem;
     color: var(--c-text-muted);
 }
 
-.task-actions {
-    display: flex;
-    gap: 4px;
+/* ===== Tomato Dot Selector ===== */
+.pomo-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
 }
 
-.t-action {
-    width: 30px;
-    height: 30px;
+.pomo-dot {
+    /* Dimmed by default */
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 2px;
     border: none;
-    border-radius: 7px;
+    background: none;
+    cursor: pointer;
+    filter: grayscale(1);
+    opacity: 0.22;
+    transition: filter 0.18s ease, opacity 0.18s ease, transform 0.15s var(--spring-bounce);
+    touch-action: manipulation;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+}
+
+.pomo-dot:hover {
+    opacity: 0.45;
+    filter: grayscale(0.5);
+    transform: scale(1.15);
+}
+
+/* Hover preview: light up during mouse-over sweep */
+.pomo-dot.hover-preview {
+    filter: grayscale(0) !important;
+    opacity: 0.7 !important;
+    transform: scale(1.12);
+}
+
+/* User selected / planned */
+.pomo-dot.lit {
+    filter: grayscale(0);
+    opacity: 1;
+}
+
+.pomo-dot.lit:hover {
+    transform: scale(1.2);
+}
+
+/* Actually completed pomodoro */
+.pomo-dot.done-dot {
+    filter: grayscale(0);
+    opacity: 1;
+    /* Subtle glow for completed */
+    filter: drop-shadow(0 0 3px rgba(255,71,87,0.5));
+}
+
+/* Overflow badge when planned > 5 */
+.pomo-overflow-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--c-primary-soft);
+    background: rgba(255,71,87,0.1);
+    border: 1px solid rgba(255,71,87,0.2);
+    border-radius: 10px;
+    padding: 1px 7px;
+    margin-left: 2px;
+    letter-spacing: 0.02em;
+}
+
+/* Chevron more button */
+.pomo-more-btn {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--c-border);
+    border-radius: 5px;
     background: transparent;
     color: var(--c-text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.18s;
+    padding: 0;
+    flex-shrink: 0;
+    margin-left: 1px;
+}
+
+.pomo-more-btn:hover {
+    border-color: var(--c-primary);
+    color: var(--c-primary-soft);
+    background: rgba(255,71,87,0.06);
+}
+
+/* Completed count label */
+.pomo-done-count {
+    font-size: 0.66rem;
+    color: var(--c-primary-soft);
+    font-weight: 600;
+    opacity: 0.75;
+}
+
+/* ===== Popover for >5 selection ===== */
+.pomo-popover {
+    position: fixed;
+    z-index: 1000;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 12px 14px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    animation: popIn 0.2s var(--spring-bounce);
+    min-width: 220px;
+}
+
+.pomo-popover-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    margin-bottom: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.pomo-popover-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pomo-chip {
+    min-width: 40px;
+    height: 34px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    background: var(--c-surface-raised);
+    color: var(--c-text);
     font-size: 0.82rem;
-    transition: 0.2s;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s var(--spring-smooth);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    touch-action: manipulation;
 }
 
-.t-action:hover {
-    background: rgba(255,255,255,0.07);
+.pomo-chip:hover {
+    border-color: var(--c-primary);
+    color: var(--c-primary-soft);
+    background: rgba(255,71,87,0.07);
+    transform: translateY(-1px);
 }
 
+.pomo-chip.active {
+    border-color: var(--c-primary);
+    background: rgba(255,71,87,0.12);
+    color: var(--c-primary-soft);
+}
+
+.task-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.t-action {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--c-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--spring-smooth);
+}
+
+/* Hover and active micro-interactions */
 .t-action.start-t:hover {
-    color: var(--c-primary);
+    color: var(--c-success);
+    background: rgba(46, 204, 113, 0.1);
+    border-color: rgba(46, 204, 113, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.15);
 }
 
 .t-action.del-t:hover {
-    color: var(--c-primary);
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+    border-color: rgba(231, 76, 60, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.15);
+}
+
+.t-action:active {
+    transform: scale(0.92) !important;
 }
 
 .empty-state {

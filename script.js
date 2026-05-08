@@ -52,6 +52,9 @@ class PomodoroTimer {
             totalFocusTime: document.getElementById('total-focus-time'),
             tasksCompletedToday: document.getElementById('tasks-completed-today'),
             pomodoroList: document.getElementById('pomodoro-list'),
+            pomTally: document.getElementById('pomo-tally'),
+            taskStatusPill: document.getElementById('task-status-pill'),
+            taskStatusText: document.getElementById('task-status-text'),
             streakInfo: document.getElementById('streak-info'),
             goalInfo: document.getElementById('goal-info')
         };
@@ -176,6 +179,19 @@ class PomodoroTimer {
                 this.renderStats(e.currentTarget.dataset.range);
             });
         });
+
+        // Task status pill — navigate to todo tab
+        const taskPill = document.getElementById('task-status-pill');
+        if (taskPill) {
+            taskPill.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                const todoNav = document.querySelector('[data-panel="todo"]');
+                if (todoNav) todoNav.classList.add('active');
+                const todoPanel = document.getElementById('panel-todo');
+                if (todoPanel) todoPanel.classList.add('active');
+            });
+        }
 
         // 键盘快捷键
         document.addEventListener('keydown', e => {
@@ -417,19 +433,62 @@ class PomodoroTimer {
     }
 
     updateStats() {
-        this.el.completedPomodoros.textContent = this.completedPomodoros;
-        this.el.totalFocusTime.textContent = `${this.totalFocusMinutes}分钟`;
+        // Legacy DOM updates (for stats panel compatibility)
+        if (this.el.completedPomodoros) this.el.completedPomodoros.textContent = this.completedPomodoros;
+        if (this.el.totalFocusTime) this.el.totalFocusTime.textContent = `${this.totalFocusMinutes}分钟`;
 
+        const activeTasks = this.todos.filter(t => !t.completed).length;
         const completedTasks = this.todos.filter(t => t.completed).length;
-        this.el.tasksCompletedToday.textContent = completedTasks;
+        if (this.el.tasksCompletedToday) this.el.tasksCompletedToday.textContent = completedTasks;
+
+        // === Tomato Tally ===
+        const tally = document.getElementById('pomo-tally');
+        if (tally) {
+            tally.innerHTML = '';
+            const n = this.completedPomodoros;
+            if (n === 0) {
+                tally.classList.add('empty');
+            } else {
+                tally.classList.remove('empty');
+                if (n <= 5) {
+                    for (let i = 0; i < n; i++) {
+                        const span = document.createElement('span');
+                        span.className = 'pomo-icon';
+                        span.textContent = '🍅';
+                        span.style.animationDelay = `${i * 60}ms`;
+                        tally.appendChild(span);
+                    }
+                } else {
+                    const badge = document.createElement('span');
+                    badge.className = 'pomo-count-badge';
+                    badge.innerHTML = `🍅 ×${n}`;
+                    tally.appendChild(badge);
+                }
+            }
+        }
+
+        // === Task Status Pill ===
+        const pill = document.getElementById('task-status-pill');
+        const pillText = document.getElementById('task-status-text');
+        if (pill && pillText) {
+            if (activeTasks === 0 && completedTasks === 0) {
+                // No tasks at all
+                pill.classList.remove('has-tasks');
+                pillText.textContent = '去添加任务';
+            } else if (activeTasks === 0) {
+                // All done!
+                pill.classList.add('has-tasks');
+                pillText.textContent = `全部完成 ✨`;
+            } else {
+                pill.classList.add('has-tasks');
+                pillText.textContent = `${activeTasks} 项进行中`;
+            }
+        }
     }
 
     addPomodoroItem() {
-        const item = document.createElement('span');
-        item.className = 'pomodoro-item';
-        item.textContent = '🍅';
-        item.style.animationDelay = `${this.completedPomodoros * 0.1}s`;
-        this.el.pomodoroList.appendChild(item);
+        // Just update stats - the tally handles the visual display
+        this.updateStats();
     }
 
     // ====== 连续打卡 & 目标 ======
@@ -563,7 +622,8 @@ class PomodoroTimer {
             createdAt: Date.now(),
             completedAt: null,
             pomosTotal: 0,
-            pomosToday: 0
+            pomosToday: 0,
+            pomosPlanned: 1  // Default planned pomodoros
         };
 
         this.todos.unshift(todo);
@@ -577,6 +637,7 @@ class PomodoroTimer {
         const empty = document.getElementById('todo-empty');
         const footer = document.getElementById('todo-footer');
         const countEl = document.getElementById('todo-count');
+        const badgeEl = document.getElementById('todo-count-badge');
 
         let filtered = this.todos;
         if (filter === 'active') filtered = this.todos.filter(t => !t.completed);
@@ -593,28 +654,74 @@ class PomodoroTimer {
             countEl.textContent = `${this.todos.filter(t => !t.completed).length} 项待完成`;
         }
 
+        // Update header badge
+        if (badgeEl) {
+            const active = this.todos.filter(t => !t.completed).length;
+            badgeEl.textContent = active > 0 ? `${active} 项进行中` : `全部完成`;
+        }
+
         filtered.forEach(todo => {
+            // Ensure pomosPlanned exists
+            if (!todo.pomosPlanned) todo.pomosPlanned = 1;
+
+            const done = todo.pomosTotal || 0;
+            const planned = todo.pomosPlanned;
+            const isDone = todo.completed;
+            const isOverdue = done >= planned && !isDone;
+
+            // Build the 5 tomato dots
+            const MAX_DOTS = 5;
+            let dotsHTML = '';
+            for (let i = 1; i <= MAX_DOTS; i++) {
+                const isLit = i <= planned;
+                const isCompleted = i <= done;
+                dotsHTML += `<button class="pomo-dot${isLit ? ' lit' : ''}${isCompleted ? ' done-dot' : ''}"
+                    data-id="${todo.id}" data-val="${i}"
+                    aria-label="${i}个番茄" aria-pressed="${isLit}">&#127813;</button>`;
+            }
+
+            // Overflow: if planned > 5, show a badge; always show a "+" more button
+            const overflowBadge = planned > 5
+                ? `<span class="pomo-overflow-badge">${planned}个</span>`
+                : '';
+
+            const moreBtn = `<button class="pomo-more-btn" data-id="${todo.id}"
+                title="更多计划" aria-label="设置更多番茄数">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>`;
+
             const li = document.createElement('li');
-            li.className = `task-item${todo.completed ? ' done' : ''}`;
+            li.className = `task-item${isDone ? ' done' : ''}${isOverdue ? ' pomo-reached' : ''}`;
+            li.dataset.id = todo.id;
             li.innerHTML = `
-                <div class="task-check ${todo.completed ? 'on' : ''}"
-                     data-id="${todo.id}" role="checkbox" tabindex="0"></div>
+                <div class="task-check ${isDone ? 'on' : ''}"
+                     data-id="${todo.id}" role="checkbox" tabindex="0"
+                     aria-checked="${isDone}"></div>
                 <div class="task-body">
                     <div class="task-name">${this.escapeHtml(todo.text)}</div>
                     <div class="task-meta">
-                        <span>🍅 × ${todo.pomosTotal}</span>
-                        ${todo.completed ? `<span>✓ 完成</span>` : ''}
+                        <div class="pomo-selector">
+                            ${dotsHTML}
+                            ${overflowBadge}
+                            ${moreBtn}
+                        </div>
+                        ${done > 0 ? `<span class="pomo-done-count">完成 ${done}</span>` : ''}
+                        ${isDone ? `<span class="task-done-label">✓ 已完成</span>` : ''}
                     </div>
                 </div>
                 <div class="task-actions">
-                    <button class="t-action start-t" data-action="start" data-id="${todo.id}" title="开始专注">▶️</button>
-                    <button class="t-action del-t" data-action="delete" data-id="${todo.id}" title="删除">✕</button>
+                    <button class="t-action start-t" data-id="${todo.id}" title="开始专注" aria-label="开始专注此任务">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>
+                    </button>
+                    <button class="t-action del-t" data-id="${todo.id}" title="删除" aria-label="删除此任务">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                 </div>
             `;
             list.appendChild(li);
         });
 
-        // 绑定任务操作事件
+        // Bind events
         list.querySelectorAll('.task-check').forEach(cb => {
             cb.addEventListener('click', () => this.toggleTodoComplete(cb.dataset.id));
             cb.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.toggleTodoComplete(cb.dataset.id); }});
@@ -627,11 +734,106 @@ class PomodoroTimer {
         list.querySelectorAll('.del-t').forEach(btn => {
             btn.addEventListener('click', () => this.deleteTodo(btn.dataset.id));
         });
+
+        // Tomato dot click: set planned = dot value
+        list.querySelectorAll('.pomo-dot').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const val = parseInt(btn.dataset.val);
+                const todo = this.todos.find(t => t.id === btn.dataset.id);
+                if (!todo) return;
+                // Toggle: clicking the same value again keeps it (don't toggle off)
+                todo.pomosPlanned = val;
+                this.renderTodos(document.querySelector('.filt-btn.active')?.dataset.filter || 'all');
+                this.saveToStorage();
+            });
+            // Hover preview: light up dots up to hovered index
+            btn.addEventListener('mouseenter', () => {
+                const val = parseInt(btn.dataset.val);
+                const selector = btn.closest('.pomo-selector');
+                selector.querySelectorAll('.pomo-dot').forEach((d, i) => {
+                    d.classList.toggle('hover-preview', i + 1 <= val);
+                });
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.closest('.pomo-selector').querySelectorAll('.pomo-dot').forEach(d => {
+                    d.classList.remove('hover-preview');
+                });
+            });
+        });
+
+        // More button: open popover to pick >5
+        list.querySelectorAll('.pomo-more-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                this.showPomoPopover(btn, btn.dataset.id);
+            });
+        });
     }
+
+    showPomoPopover(anchorBtn, todoId) {
+        // Remove any existing popover
+        document.querySelectorAll('.pomo-popover').forEach(p => p.remove());
+
+        const todo = this.todos.find(t => t.id === todoId);
+        if (!todo) return;
+
+        const popover = document.createElement('div');
+        popover.className = 'pomo-popover';
+        popover.innerHTML = `
+            <div class="pomo-popover-title">设置计划番茄数</div>
+            <div class="pomo-popover-chips">
+                ${[6,7,8,9,10,12,15,20].map(n =>
+                    `<button class="pomo-chip${todo.pomosPlanned === n ? ' active' : ''}" data-val="${n}">${n}</button>`
+                ).join('')}
+            </div>
+        `;
+        document.body.appendChild(popover);
+
+        // Position relative to anchor
+        const rect = anchorBtn.getBoundingClientRect();
+        popover.style.left = `${rect.left}px`;
+        popover.style.top = `${rect.bottom + 6}px`;
+
+        // Adjust if overflowing right
+        requestAnimationFrame(() => {
+            const pw = popover.offsetWidth;
+            if (rect.left + pw > window.innerWidth - 12) {
+                popover.style.left = `${window.innerWidth - pw - 12}px`;
+            }
+        });
+
+        // Chip click
+        popover.querySelectorAll('.pomo-chip').forEach(chip => {
+            chip.addEventListener('click', e => {
+                e.stopPropagation();
+                todo.pomosPlanned = parseInt(chip.dataset.val);
+                this.renderTodos(document.querySelector('.filt-btn.active')?.dataset.filter || 'all');
+                this.saveToStorage();
+                popover.remove();
+            });
+        });
+
+        // Close on outside click
+        setTimeout(() => {
+            document.addEventListener('click', () => popover.remove(), { once: true });
+        }, 0);
+    }
+
+    adjustPlannedPomos(id, delta) {
+        const todo = this.todos.find(t => t.id === id);
+        if (!todo) return;
+        if (!todo.pomosPlanned) todo.pomosPlanned = 1;
+        todo.pomosPlanned = Math.max(1, Math.min(20, todo.pomosPlanned + delta));
+        this.renderTodos(document.querySelector('.filt-btn.active')?.dataset.filter || 'all');
+        this.saveToStorage();
+    }
+
 
     toggleTodoComplete(id) {
         const todo = this.todos.find(t => t.id === id);
         if (!todo) return;
+
 
         todo.completed = !todo.completed;
         todo.completedAt = todo.completed ? Date.now() : null;

@@ -101,26 +101,16 @@
                     </button>
                 </div>
 
-                <!-- 今日统计 - 单行紧凑 -->
-                <div class="mini-stats">
-                    <div class="mini-stat">
-                        <strong id="completed-pomodoros">0</strong>
-                        <span>番茄</span>
-                    </div>
-                    <div class="mini-stat-divider"></div>
-                    <div class="mini-stat">
-                        <strong id="total-focus-time">0m</strong>
-                        <span>专注</span>
-                    </div>
-                    <div class="mini-stat-divider"></div>
-                    <div class="mini-stat">
-                        <strong id="tasks-completed-today">0</strong>
-                        <span>任务</span>
-                    </div>
+                <!-- 今日状态行 -->
+                <div class="today-status">
+                    <!-- 番茄完成图标（≤5个显示实际图标，>5显示 🍅×N） -->
+                    <div class="pomo-tally" id="pomo-tally"></div>
+                    <!-- 任务状态胶囊 -->
+                    <button class="task-status-pill" id="task-status-pill" data-panel="todo">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        <span id="task-status-text">去添加任务</span>
+                    </button>
                 </div>
-
-                <!-- 已完成番茄图标行 -->
-                <div class="pomodoro-icons" id="pomodoro-list"></div>
             </div>
         </section>
 
