@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专注番茄钟</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍅 专注番茄钟</h1>
+            <p class="subtitle">保持专注，提升效率</p>
+        </header>
+
+        <div class="timer-container">
+            <!-- 模式选择 -->
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="pomodoro" data-time="25">专注</button>
+                <button class="mode-btn" data-mode="shortBreak" data-time="5">短休息</button>
+                <button class="mode-btn" data-mode="longBreak" data-time="15">长休息</button>
+            </div>
+
+            <!-- 番茄钟显示 -->
+            <div class="timer-circle">
+                <svg viewBox="0 0 260 260" class="timer-svg">
+                    <circle cx="130" cy="130" r="120" class="timer-bg"></circle>
+                    <circle cx="130" cy="130" r="120" class="timer-progress" id="progress"></circle>
+                </svg>
+                <div class="timer-display">
+                    <span id="time-display">25:00</span>
+                    <span class="timer-label" id="timer-label">专注时间</span>
+                </div>
+            </div>
+
+            <!-- 控制按钮 -->
+            <div class="controls">
+                <button class="control-btn secondary" id="reset-btn" title="重置">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                </button>
+                <button class="control-btn primary" id="start-btn">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" id="play-icon">
+                        <polygon points="5,3 19,12 5,21"/>
+                    </svg>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" id="pause-icon" style="display: none;">
+                        <rect x="6" y="4" width="4" height="16"/>
+                        <rect x="14" y="4" width="4" height="16"/>
+                    </svg>
+                </button>
+                <button class="control-btn secondary" id="skip-btn" title="跳过">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5,4 15,12 5,20"/>
+                        <line x1="19" y1="5" x2="19" y2="19"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 设置区域 -->
+            <div class="settings-section">
+                <details>
+                    <summary>⚙️ 设置</summary>
+                    <div class="settings-content">
+                        <div class="setting-item">
+                            <label>专注时长（分钟）</label>
+                            <input type="number" id="pomodoro-time" value="25" min="1" max="60">
+                        </div>
+                        <div class="setting-item">
+                            <label>短休息（分钟）</label>
+                            <input type="number" id="short-break-time" value="5" min="1" max="30">
+                        </div>
+                        <div class="setting-item">
+                            <label>长休息（分钟）</label>
+                            <input type="number" id="long-break-time" value="15" min="1" max="60">
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="completed-pomodoros">0</span>
+                    <span class="stat-label">已完成番茄</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="total-focus-time">0分钟</span>
+                    <span class="stat-label">今日专注时长</span>
+                </div>
+            </div>
+
+            <!-- 番茄列表 -->
+            <div class="pomodoro-list" id="pomodoro-list">
+                <!-- 动态生成已完成的番茄图标 -->
+            </div>
+        </div>
+
+        <footer>
+            <p>💡 每完成4个番茄后建议休息更长时间</p>
+        </footer>
+    </div>
+
+    <!-- 音效提示 -->
+    <audio id="alarm-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQkAZrTmsWxVDQBlt+K0sGkNAEiC3Oy2aA0ADVHf7fFuEgAOU4Dw8G0SAAs8g/TxbhIACz2A9PFuEgALPYD08W4SAAvLgPQxLRMAC8mA8zMtEwALyYDzMy0TAAtJQPMxLRMAC0lA8zEtEQALSUDzMxLRMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==" type="audio/wav">
+    </audio>
+
+    <script src="script.js"></script>
+</body>
+</html>
