@@ -10,279 +10,210 @@
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
-    <div class="container">
-        <!-- 顶部导航栏 -->
-        <header>
-            <h1>🍅 专注番茄钟</h1>
-            <p class="subtitle">保持专注，提升效率</p>
+    <!-- 顶部固定导航 -->
+    <header class="top-bar">
+        <div class="top-bar-left">
+            <h1>🍅 番茄钟</h1>
+        </div>
+        <div class="top-bar-right">
+            <span class="status-chip streak-chip" id="streak-info">🔥 0天</span>
+            <span class="status-chip goal-chip" id="goal-info">0/8</span>
 
-            <!-- 连续打卡 & 每日目标 -->
-            <div class="streak-goal-bar">
-                <div class="streak-info" id="streak-info">
-                    <span class="flame-icon">🔥</span>
-                    <span>连续 <strong id="streak-days">0</strong> 天</span>
+            <!-- 右上角浮动工具按钮 -->
+            <button class="fab-btn" id="btn-sound" title="背景音">🎵</button>
+            <button class="fab-btn" id="btn-settings" title="设置">⚙️</button>
+            <button class="fab-btn" id="btn-theme" title="切换主题">🌙</button>
+        </div>
+    </header>
+
+    <!-- 浮动面板：背景音 -->
+    <div class="float-panel" id="panel-sound">
+        <div class="fp-header"><h3>🎵 背景音</h3><button class="fp-close">&times;</button></div>
+        <div class="sound-grid">
+            <button class="sound-btn" data-sound="rain"><span>🌧️</span>雨声</button>
+            <button class="sound-btn" data-sound="forest"><span>🌲</span>森林</button>
+            <button class="sound-btn" data-sound="ocean"><span>🌊</span>海浪</button>
+            <button class="sound-btn" data-sound="cafe"><span>☕</span>咖啡馆</button>
+            <button class="sound-btn" data-sound="fire"><span>🔥</span>篝火</button>
+            <button class="sound-btn" data-sound="wind"><span>💨</span>风声</button>
+        </div>
+        <div class="volume-row">
+            <span>🔊</span>
+            <input type="range" id="volume-slider" min="0" max="100" value="50">
+        </div>
+        <div class="sound-stop-row">
+            <button class="stop-sound-btn" id="btn-stop-sound">⏹ 停止播放</button>
+        </div>
+    </div>
+
+    <!-- 浮动面板：设置 -->
+    <div class="float-panel" id="panel-settings">
+        <div class="fp-header"><h3>⚙️ 设置</h3><button class="fp-close">&times;</button></div>
+        <div class="settings-grid fp-body">
+            <label>专注 <input type="number" id="pomodoro-time" value="25" min="1" max="60"> 分</label>
+            <label>短休 <input type="number" id="short-break-time" value="5" min="1" max="30"> 分</label>
+            <label>长休 <input type="number" id="long-break-time" value="15" min="1" max="60"> 分</label>
+            <label>目标 <input type="number" id="daily-goal" value="8" min="1" max="30"> 个</label>
+            <label class="toggle-row">
+                自动连续
+                <input type="checkbox" id="auto-continue">
+            </label>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <!-- ===== Tab1: 番茄钟 ===== -->
+        <section class="tab-panel active" id="panel-timer">
+
+            <!-- 核心计时区（Hero） -->
+            <div class="hero-card">
+                <!-- 模式选择 - 紧凑行内 -->
+                <div class="mode-pills">
+                    <button class="mode-pill active" data-mode="pomodoro">专注</button>
+                    <button class="mode-pill" data-mode="shortBreak">短休</button>
+                    <button class="mode-pill" data-mode="longBreak">长休</button>
                 </div>
-                <div class="goal-progress" id="goal-progress">
-                    <span class="goal-text">今日目标: <strong id="goal-current">0</strong>/<strong id="goal-target">8</strong></span>
-                    <div class="goal-bar">
-                        <div class="goal-fill" id="goal-fill"></div>
-                    </div>
-                </div>
-            </div>
-        </header>
 
-        <!-- Tab 导航 -->
-        <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="timer">⏱️ 番茄钟</button>
-            <button class="tab-btn" data-tab="todo">📝 待办</button>
-            <button class="tab-btn" data-tab="stats">📊 统计</button>
-        </nav>
-
-        <!-- 番茄钟面板 -->
-        <div class="tab-content active" id="tab-timer">
-            <div class="timer-container">
-                <!-- 模式选择 -->
-                <div class="mode-selector">
-                    <button class="mode-btn active" data-mode="pomodoro" data-time="25">专注</button>
-                    <button class="mode-btn" data-mode="shortBreak" data-time="5">短休息</button>
-                    <button class="mode-btn" data-mode="longBreak" data-time="15">长休息</button>
-                </div>
-
-                <!-- 番茄钟显示 -->
-                <div class="timer-circle">
-                    <svg viewBox="0 0 260 260" class="timer-svg">
-                        <circle cx="130" cy="130" r="120" class="timer-bg"></circle>
-                        <circle cx="130" cy="130" r="120" class="timer-progress" id="progress"></circle>
+                <!-- 计时器圆环 -->
+                <div class="timer-ring">
+                    <svg viewBox="0 0 260 260" class="ring-svg">
+                        <circle cx="130" cy="130" r="118" class="ring-bg"></circle>
+                        <circle cx="130" cy="130" r="118" class="ring-progress" id="progress"></circle>
                     </svg>
-                    <div class="timer-display">
-                        <span id="time-display">25:00</span>
-                        <span class="timer-label" id="timer-label">专注时间</span>
-                        <span class="current-task-label" id="current-task-label"></span>
+                    <div class="ring-center">
+                        <div class="time-text" id="time-display">25:00</div>
+                        <div class="mode-label" id="timer-label">专注中</div>
+                        <div class="task-hint" id="current-task-label"></div>
                     </div>
                 </div>
 
                 <!-- 控制按钮 -->
-                <div class="controls">
-                    <button class="control-btn secondary" id="reset-btn" title="重置">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                            <path d="M3 3v5h5"/>
-                        </svg>
+                <div class="btn-row">
+                    <button class="ctrl-btn icon-only" id="reset-btn" title="重置 (R)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                     </button>
-                    <button class="control-btn primary" id="start-btn">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" id="play-icon">
-                            <polygon points="5,3 19,12 5,21"/>
-                        </svg>
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" id="pause-icon" style="display: none;">
-                            <rect x="6" y="4" width="4" height="16"/>
-                            <rect x="14" y="4" width="4" height="16"/>
-                        </svg>
+                    <button class="ctrl-btn main-btn" id="start-btn" title="开始/暂停 (空格)">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" id="play-icon"><polygon points="6,4 20,12 6,20"/></svg>
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" id="pause-icon" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                     </button>
-                    <button class="control-btn secondary" id="skip-btn" title="跳过">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="5,4 15,12 5,20"/>
-                            <line x1="19" y1="5" x2="19" y2="19"/>
-                        </svg>
+                    <button class="ctrl-btn icon-only" id="skip-btn" title="跳过 (S)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
                     </button>
                 </div>
 
-                <!-- 白噪音控制 -->
-                <div class="ambient-section">
-                    <details>
-                        <summary>🎵 背景音</summary>
-                        <div class="ambient-grid" id="ambient-grid">
-                            <button class="ambient-btn" data-sound="rain">
-                                <span class="ambient-icon">🌧️</span>
-                                <span class="ambient-name">雨声</span>
-                            </button>
-                            <button class="ambient-btn" data-sound="forest">
-                                <span class="ambient-icon">🌲</span>
-                                <span class="ambient-name">森林</span>
-                            </button>
-                            <button class="ambient-btn" data-sound="ocean">
-                                <span class="ambient-icon">🌊</span>
-                                <span class="ambient-name">海浪</span>
-                            </button>
-                            <button class="ambient-btn" data-sound="cafe">
-                                <span class="ambient-icon">☕</span>
-                                <span class="ambient-name">咖啡馆</span>
-                            </button>
-                            <button class="ambient-btn" data-sound="fire">
-                                <span class="ambient-icon">🔥</span>
-                                <span class="ambient-name">篝火</span>
-                            </button>
-                            <button class="ambient-btn" data-sound="wind">
-                                <span class="ambient-icon">💨</span>
-                                <span class="ambient-name">风声</span>
-                            </button>
-                        </div>
-                        <div class="volume-control">
-                            <label>🔊 音量</label>
-                            <input type="range" id="volume-slider" min="0" max="100" value="50">
-                        </div>
-                    </details>
-                </div>
-
-                <!-- 设置区域 -->
-                <div class="settings-section">
-                    <details>
-                        <summary>⚙️ 设置</summary>
-                        <div class="settings-content">
-                            <div class="setting-item">
-                                <label>专注时长（分钟）</label>
-                                <input type="number" id="pomodoro-time" value="25" min="1" max="60">
-                            </div>
-                            <div class="setting-item">
-                                <label>短休息（分钟）</label>
-                                <input type="number" id="short-break-time" value="5" min="1" max="30">
-                            </div>
-                            <div class="setting-item">
-                                <label>长休息（分钟）</label>
-                                <input type="number" id="long-break-time" value="15" min="1" max="60">
-                            </div>
-                            <div class="setting-item">
-                                <label>每日目标（番茄数）</label>
-                                <input type="number" id="daily-goal" value="8" min="1" max="30">
-                            </div>
-                            <div class="setting-item setting-toggle">
-                                <label>自动连续模式</label>
-                                <label class="switch">
-                                    <input type="checkbox" id="auto-continue">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                    </details>
-                </div>
-
-                <!-- 统计信息 -->
-                <div class="stats">
-                    <div class="stat-item">
-                        <span class="stat-number" id="completed-pomodoros">0</span>
-                        <span class="stat-label">已完成番茄</span>
+                <!-- 今日统计 - 单行紧凑 -->
+                <div class="mini-stats">
+                    <div class="mini-stat">
+                        <strong id="completed-pomodoros">0</strong>
+                        <span>番茄</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="total-focus-time">0分钟</span>
-                        <span class="stat-label">今日专注时长</span>
+                    <div class="mini-stat-divider"></div>
+                    <div class="mini-stat">
+                        <strong id="total-focus-time">0m</strong>
+                        <span>专注</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="tasks-completed-today">0</span>
-                        <span class="stat-label">完成任务数</span>
+                    <div class="mini-stat-divider"></div>
+                    <div class="mini-stat">
+                        <strong id="tasks-completed-today">0</strong>
+                        <span>任务</span>
                     </div>
                 </div>
 
-                <!-- 番茄列表 -->
-                <div class="pomodoro-list" id="pomodoro-list"></div>
+                <!-- 已完成番茄图标行 -->
+                <div class="pomodoro-icons" id="pomodoro-list"></div>
             </div>
-        </div>
+        </section>
 
-        <!-- 待办清单面板 -->
-        <div class="tab-content" id="tab-todo">
-            <div class="todo-container">
-                <div class="todo-input-section">
-                    <form id="todo-form" class="todo-form">
-                        <input type="text" id="todo-input" placeholder="添加新任务..." autocomplete="off">
-                        <button type="submit" class="add-todo-btn">添加</button>
-                    </form>
+        <!-- ===== Tab2: 待办清单 ===== -->
+        <section class="tab-panel" id="panel-todo">
+            <div class="card todo-card">
+                <form id="todo-form" class="todo-input-row">
+                    <input type="text" id="todo-input" placeholder="输入任务后按回车添加..." autocomplete="off">
+                    <button type="submit" class="add-btn">+</button>
+                </form>
+
+                <div class="filter-row">
+                    <button class="filt-btn active" data-filter="all">全部</button>
+                    <button class="filt-btn" data-filter="active">进行中</button>
+                    <button class="filt-btn" data-filter="completed">已完成</button>
                 </div>
 
-                <!-- 任务过滤 -->
-                <div class="todo-filters">
-                    <button class="filter-btn active" data-filter="all">全部</button>
-                    <button class="filter-btn" data-filter="active">进行中</button>
-                    <button class="filter-btn" data-filter="completed">已完成</button>
+                <ul class="task-list" id="todo-list"></ul>
+
+                <div class="empty-state" id="todo-empty">
+                    <p>暂无任务<br><small>添加一个开始专注吧 🎯</small></p>
                 </div>
 
-                <!-- 任务列表 -->
-                <ul class="todo-list" id="todo-list">
-                    <!-- 动态生成任务项 -->
-                </ul>
-
-                <div class="todo-empty" id="todo-empty">
-                    <p>暂无任务，添加一个开始吧 🎯</p>
-                </div>
-
-                <!-- 底部操作 -->
-                <div class="todo-footer" id="todo-footer" style="display: none;">
+                <div class="list-footer" id="todo-footer" style="display:none;">
                     <span id="todo-count"></span>
-                    <button class="clear-completed-btn" id="clear-completed">清除已完成</button>
+                    <button class="clean-btn" id="clear-completed">清除已完成</button>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- 统计面板 -->
-        <div class="tab-content" id="tab-stats">
-            <div class="stats-container">
-                <!-- 时间范围切换 -->
-                <div class="stats-range">
-                    <button class="range-btn active" data-range="today">今天</button>
-                    <button class="range-btn" data-range="week">本周</button>
-                    <button class="range-btn" data-range="month">本月</button>
+        <!-- ===== Tab3: 统计 ===== -->
+        <section class="tab-panel" id="panel-stats">
+            <div class="stats-page">
+                <!-- 时间范围 -->
+                <div class="range-tabs">
+                    <button class="r-tab active" data-range="today">今天</button>
+                    <button class="r-tab" data-range="week">本周</button>
+                    <button class="r-tab" data-range="month">本月</button>
                 </div>
 
-                <!-- 总览卡片 -->
-                <div class="stats-overview">
-                    <div class="overview-card">
-                        <span class="overview-value" id="overview-total-pomos">0</span>
-                        <span class="overview-label">总番茄数</span>
-                    </div>
-                    <div class="overview-card">
-                        <span class="overview-value" id="overview-total-hours">0h</span>
-                        <span class="overview-label">总专注时长</span>
-                    </div>
-                    <div class="overview-card">
-                        <span class="overview-value" id="overview-total-tasks">0</span>
-                        <span class="overview-label">完成任务</span>
-                    </div>
-                    <div class="overview-card">
-                        <span class="overview-value" id="overview-best-streak">0</span>
-                        <span class="overview-label">最长连续</span>
-                    </div>
+                <!-- 一行数字总览 -->
+                <div class="stat-row">
+                    <div class="stat-cell"><strong id="overview-total-pomos">0</strong><span>番茄数</span></div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-cell"><strong id="overview-total-hours">0h</strong><span>专注时长</span></div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-cell"><strong id="overview-total-tasks">0</strong><span>完成任务</span></div>
                 </div>
 
-                <!-- 图表区域 -->
-                <div class="chart-section">
-                    <h3 class="section-title">专注趋势</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="stats-chart" width="360" height="200"></canvas>
-                    </div>
+                <!-- 图表区（紧凑） -->
+                <div class="chart-area" id="chart-area">
+                    <canvas id="stats-chart"></canvas>
                 </div>
 
-                <!-- 热力图区域 -->
-                <div class="heatmap-section">
-                    <h3 class="section-title">活跃热力图</h3>
-                    <div class="heatmap-wrapper" id="heatmap-wrapper">
-                        <!-- 动态生成 -->
+                <!-- 折叠：热力图 -->
+                <details class="stats-detail">
+                    <summary>📈 活跃热力图</summary>
+                    <div class="detail-body">
+                        <div class="heatmap-sm" id="heatmap-wrapper"></div>
+                        <div class="heat-legend-sm"><span>少</span><div class="heat-dots"><i></i><i></i><i></i><i></i><i></i></div><span>多</span></div>
                     </div>
-                    <div class="heatmap-legend">
-                        <span>少</span>
-                        <div class="legend-cells">
-                            <span class="legend-cell level-0"></span>
-                            <span class="legend-cell level-1"></span>
-                            <span class="legend-cell level-2"></span>
-                            <span class="legend-cell level-3"></span>
-                            <span class="legend-cell level-4"></span>
-                        </div>
-                        <span>多</span>
-                    </div>
-                </div>
+                </details>
 
-                <!-- 详细日志 -->
-                <div class="history-section">
-                    <h3 class="section-title">历史记录</h3>
-                    <div class="history-list" id="history-list">
-                        <!-- 动态生成 -->
+                <!-- 折叠：历史记录 -->
+                <details class="stats-detail">
+                    <summary>📋 历史记录</summary>
+                    <div class="detail-body history-scroll" id="history-list">
+                        <p class="empty-hist">暂无历史记录</p>
                     </div>
-                </div>
+                </details>
+
+                <!-- 连续天数（底部小字） -->
+                <div class="streak-footer"><span id="overview-best-streak">0</span> 天连续打卡</div>
             </div>
-        </div>
+        </section>
+    </main>
 
-        <footer>
-            <p>💡 每完成4个番茄后建议休息更长时间</p>
-        </footer>
-    </div>
+    <!-- 底部 Tab 导航（移动端风格） -->
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-panel="timer">
+            <span class="nav-icon">🍅</span>
+            <span class="nav-label">计时</span>
+        </button>
+        <button class="nav-btn" data-panel="todo">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">待办</span>
+        </button>
+        <button class="nav-btn" data-panel="stats">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">统计</span>
+        </button>
+    </nav>
 
-    <!-- 音效提示 -->
     <audio id="alarm-sound" preload="auto">
         <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQkAZrTmsWxVDQBlt+K0sGkNAEiC3Oy2aA0ADVHf7fFuEgAOU4Dw8G0SAAs8g/TxbhIACz2A9PFuEgALPYD08W4SAAvLgPQxLRMAC8mA8zMtEwALyYDzMy0TAAtJQPMxLRMAC0lA8zEtEQALSUDzMxLRMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==" type="audio/wav">
     </audio>

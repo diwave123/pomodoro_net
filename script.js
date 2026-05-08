@@ -52,10 +52,8 @@ class PomodoroTimer {
             totalFocusTime: document.getElementById('total-focus-time'),
             tasksCompletedToday: document.getElementById('tasks-completed-today'),
             pomodoroList: document.getElementById('pomodoro-list'),
-            streakDays: document.getElementById('streak-days'),
-            goalCurrent: document.getElementById('goal-current'),
-            goalTarget: document.getElementById('goal-target'),
-            goalFill: document.getElementById('goal-fill')
+            streakInfo: document.getElementById('streak-info'),
+            goalInfo: document.getElementById('goal-info')
         };
 
         this.init();
@@ -82,7 +80,7 @@ class PomodoroTimer {
         this.el.skipBtn.addEventListener('click', () => this.skip());
 
         // 模式切换
-        document.querySelectorAll('.mode-btn').forEach(btn => {
+        document.querySelectorAll('.mode-pill').forEach(btn => {
             btn.addEventListener('click', e => this.switchMode(e.currentTarget));
         });
 
@@ -111,7 +109,7 @@ class PomodoroTimer {
             v = Math.max(1, Math.min(30, v));
             e.target.value = v;
             this.dailyGoal = v;
-            this.el.goalTarget.textContent = v;
+            this.el.goalInfo.textContent = v;
             this.updateGoalProgress();
             this.saveToStorage();
         });
@@ -123,15 +121,16 @@ class PomodoroTimer {
             this.saveToStorage();
         });
 
-        // Tab 导航
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        // Tab 导航（底部导航栏）
+        document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.addEventListener('click', e => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
                 e.currentTarget.classList.add('active');
-                document.getElementById(`tab-${e.currentTarget.dataset.tab}`).classList.add('active');
+                const panel = document.getElementById(`panel-${e.currentTarget.dataset.panel}`);
+                if (panel) panel.classList.add('active');
 
-                if (e.currentTarget.dataset.tab === 'stats') {
+                if (e.currentTarget.dataset.panel === 'stats') {
                     setTimeout(() => this.renderStats(), 50);
                 }
             });
@@ -145,9 +144,9 @@ class PomodoroTimer {
         });
 
         // 任务过滤
-        document.querySelectorAll('.filter-btn').forEach(btn => {
+        document.querySelectorAll('.filt-btn').forEach(btn => {
             btn.addEventListener('click', e => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.filt-btn').forEach(b => b.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 this.renderTodos(e.currentTarget.dataset.filter);
             });
@@ -158,7 +157,7 @@ class PomodoroTimer {
         if (clearBtn) clearBtn.addEventListener('click', () => this.clearCompletedTodos());
 
         // ====== 白噪音事件 ======
-        document.querySelectorAll('.ambient-btn').forEach(btn => {
+        document.querySelectorAll('.sound-btn').forEach(btn => {
             btn.addEventListener('click', () => this.toggleAmbient(btn.dataset.sound));
         });
 
@@ -170,9 +169,9 @@ class PomodoroTimer {
         });
 
         // ====== 统计范围切换 ======
-        document.querySelectorAll('.range-btn').forEach(btn => {
+        document.querySelectorAll('.r-tab').forEach(btn => {
             btn.addEventListener('click', e => {
-                document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.r-tab').forEach(b => b.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 this.renderStats(e.currentTarget.dataset.range);
             });
@@ -186,12 +185,76 @@ class PomodoroTimer {
             else if (e.code === 'KeyS') this.skip();
         });
 
-        // 可见性变化
+        // ====== 浮动面板控制 ======
+        const btnSound = document.getElementById('btn-sound');
+        const btnSettings = document.getElementById('btn-settings');
+        const btnTheme = document.getElementById('btn-theme');
+        const panelSound = document.getElementById('panel-sound');
+        const panelSettings = document.getElementById('panel-settings');
+
+        if (btnSound && panelSound) {
+            btnSound.addEventListener('click', () => {
+                // 如果正在播放，点击直接停止
+                if (this.activeAmbient) {
+                    this.stopAmbient();
+                    this.closePanel(panelSound, btnSound);
+                } else {
+                    this.togglePanel(panelSound, btnSound);
+                }
+            });
+            panelSound.querySelector('.fp-close').addEventListener('click', () => this.closePanel(panelSound, btnSound));
+        }
+
+        if (btnSettings && panelSettings) {
+            btnSettings.addEventListener('click', () => this.togglePanel(panelSettings, btnSettings));
+            panelSettings.querySelector('.fp-close').addEventListener('click', () => this.closePanel(panelSettings, btnSettings));
+        }
+
+        // 点击外部关闭面板
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.fab-btn') && !e.target.closest('.float-panel')) {
+                this.closeAllPanels();
+            }
+        });
+
+        // 停止播放按钮
+        const stopSoundBtn = document.getElementById('btn-stop-sound');
+        if (stopSoundBtn) {
+            stopSoundBtn.addEventListener('click', () => {
+                this.stopAmbient();
+            });
+        }
+
+        // 页面隐藏/卸载时自动停止声音
         document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.activeAmbient) {
+                this.stopAmbient();
+            }
             if (!document.hidden && this.isRunning) {
                 this.updateTitle();
             }
         });
+        window.addEventListener('beforeunload', () => {
+            if (this.activeAmbient) this.stopAmbient();
+        });
+
+        // ====== 主题切换 ======
+        if (btnTheme) {
+            // 恢复已保存的主题
+            const savedTheme = localStorage.getItem('pomodoro-theme') || 'dark';
+            this.applyTheme(savedTheme);
+            
+            btnTheme.addEventListener('click', () => {
+                const current = document.documentElement.getAttribute('data-theme') || 'dark';
+                const next = current === 'dark' ? 'light' : 'dark';
+                this.applyTheme(next);
+                localStorage.setItem('pomodoro-theme', next);
+                // 更新按钮图标
+                btnTheme.textContent = next === 'dark' ? '🌙' : '☀️';
+                // 重新绘制图表（颜色可能需要刷新）
+                setTimeout(() => this.renderStats(), 100);
+            });
+        }
     }
 
     // ====== 计时器控制 ======
@@ -287,7 +350,7 @@ class PomodoroTimer {
             : btnOrString.dataset.mode;
 
         if (typeof btnOrString !== 'string') {
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.mode-pill').forEach(b => b.classList.remove('active'));
             btnOrString.classList.add('active');
         }
 
@@ -299,7 +362,7 @@ class PomodoroTimer {
         const minutes = this.times[mode];
         this.setTimer(minutes * 60);
 
-        document.querySelectorAll('.mode-btn').forEach(btn => {
+        document.querySelectorAll('.mode-pill').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
 
@@ -415,18 +478,18 @@ class PomodoroTimer {
     }
 
     updateStreak() {
-        this.el.streakDays.textContent = this.streakDays;
+        if (this.el.streakInfo) {
+            this.el.streakInfo.innerHTML = `🔥 <strong>${this.streakDays}</strong>天`;
+        }
     }
 
     updateGoalProgress() {
         const current = this.completedPomodoros;
         const target = this.dailyGoal;
-        this.el.goalCurrent.textContent = current;
-        this.el.goalTarget.textContent = target;
-
-        const pct = Math.min((current / target) * 100, 100);
-        this.el.goalFill.style.width = `${pct}%`;
-        this.el.goalFill.classList.toggle('completed', current >= target);
+        if (this.el.goalInfo) {
+            this.el.goalInfo.innerHTML = `${current}<strong>/${target}</strong>`;
+            this.el.goalInfo.classList.toggle('goal-done', current >= target);
+        }
     }
 
     checkGoalAchieved() {
@@ -532,36 +595,36 @@ class PomodoroTimer {
 
         filtered.forEach(todo => {
             const li = document.createElement('li');
-            li.className = `todo-item${todo.completed ? ' completed' : ''}`;
+            li.className = `task-item${todo.completed ? ' done' : ''}`;
             li.innerHTML = `
-                <div class="todo-checkbox ${todo.completed ? 'checked' : ''}"
+                <div class="task-check ${todo.completed ? 'on' : ''}"
                      data-id="${todo.id}" role="checkbox" tabindex="0"></div>
-                <div class="todo-content">
-                    <div class="todo-text">${this.escapeHtml(todo.text)}</div>
-                    <div class="todo-meta">
-                        <span class="todo-pomo-count">🍅 × ${todo.pomosTotal}</span>
+                <div class="task-body">
+                    <div class="task-name">${this.escapeHtml(todo.text)}</div>
+                    <div class="task-meta">
+                        <span>🍅 × ${todo.pomosTotal}</span>
                         ${todo.completed ? `<span>✓ 完成</span>` : ''}
                     </div>
                 </div>
-                <div class="todo-actions">
-                    <button class="todo-action-btn start-todo" data-action="start" data-id="${todo.id}" title="开始专注">▶️</button>
-                    <button class="todo-action-btn delete-todo" data-action="delete" data-id="${todo.id}" title="删除">✕</button>
+                <div class="task-actions">
+                    <button class="t-action start-t" data-action="start" data-id="${todo.id}" title="开始专注">▶️</button>
+                    <button class="t-action del-t" data-action="delete" data-id="${todo.id}" title="删除">✕</button>
                 </div>
             `;
             list.appendChild(li);
         });
 
         // 绑定任务操作事件
-        list.querySelectorAll('.todo-checkbox').forEach(cb => {
+        list.querySelectorAll('.task-check').forEach(cb => {
             cb.addEventListener('click', () => this.toggleTodoComplete(cb.dataset.id));
             cb.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.toggleTodoComplete(cb.dataset.id); }});
         });
 
-        list.querySelectorAll('.start-todo').forEach(btn => {
+        list.querySelectorAll('.start-t').forEach(btn => {
             btn.addEventListener('click', () => this.selectTaskForPomodoro(btn.dataset.id));
         });
 
-        list.querySelectorAll('.delete-todo').forEach(btn => {
+        list.querySelectorAll('.del-t').forEach(btn => {
             btn.addEventListener('click', () => this.deleteTodo(btn.dataset.id));
         });
     }
@@ -582,7 +645,7 @@ class PomodoroTimer {
             }
         }
 
-        this.renderTodos(document.querySelector('.filter-btn.active')?.dataset.filter || 'all');
+        this.renderTodos(document.querySelector('.filt-btn.active')?.dataset.filter || 'all');
         this.updateStats();
         this.saveToStorage();
     }
@@ -593,11 +656,13 @@ class PomodoroTimer {
 
         this.currentTaskId = id;
 
-        // 切换到番茄钟Tab
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelector('[data-tab="timer"]').classList.add('active');
-        document.getElementById('tab-timer').classList.add('active');
+        // 切换到番茄钟面板
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        const timerNav = document.querySelector('[data-panel="timer"]');
+        if (timerNav) timerNav.classList.add('active');
+        const timerPanel = document.getElementById('panel-timer');
+        if (timerPanel) timerPanel.classList.add('active');
 
         // 切换到专注模式
         if (this.currentMode !== 'pomodoro') {
@@ -607,8 +672,8 @@ class PomodoroTimer {
         this.updateCurrentTaskLabel();
 
         // 高亮选中的任务
-        document.querySelectorAll('.todo-item').forEach(item =>
-            item.style.borderColor = item.querySelector('[data-action="start"]')?.dataset.id === id
+        document.querySelectorAll('.task-item').forEach(item =>
+            item.style.borderColor = item.querySelector('.start-t')?.dataset.id === id
                 ? 'var(--primary-color)' : 'transparent'
         );
 
@@ -620,7 +685,7 @@ class PomodoroTimer {
         if (todo) {
             todo.pomosTotal++;
             todo.pomosToday++;
-            this.renderTodos(document.querySelector('.filter-btn.active')?.dataset.filter || 'all');
+            this.renderTodos(document.querySelector('.filt-btn.active')?.dataset.filter || 'all');
         }
     }
 
@@ -630,14 +695,14 @@ class PomodoroTimer {
             this.currentTaskId = null;
             this.updateCurrentTaskLabel();
         }
-        this.renderTodos(document.querySelector('.filter-btn.active')?.dataset.filter || 'all');
+        this.renderTodos(document.querySelector('.filt-btn.active')?.dataset.filter || 'all');
         this.updateStats();
         this.saveToStorage();
     }
 
     clearCompletedTodos() {
         this.todos = this.todos.filter(t => !t.completed);
-        this.renderTodos(document.querySelector('.filter-btn.active')?.dataset.filter || 'all');
+        this.renderTodos(document.querySelector('.filt-btn.active')?.dataset.filter || 'all');
         this.updateStats();
         this.saveToStorage();
     }
@@ -646,6 +711,35 @@ class PomodoroTimer {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // ====== 浮动面板控制 ======
+    togglePanel(panel, btn) {
+        const isShown = panel.classList.contains('show');
+        this.closeAllPanels();
+        if (!isShown) {
+            panel.classList.add('show');
+            btn.classList.add('active');
+        }
+    }
+
+    closePanel(panel, btn) {
+        panel.classList.remove('show');
+        if (btn) btn.classList.remove('active');
+    }
+
+    closeAllPanels() {
+        document.querySelectorAll('.float-panel').forEach(p => p.classList.remove('show'));
+        document.querySelectorAll('.fab-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    // ====== 主题切换 ======
+    applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        const btnTheme = document.getElementById('btn-theme');
+        if (btnTheme) {
+            btnTheme.textContent = theme === 'dark' ? '🌙' : '☀️';
+        }
     }
 
     // ====== 白噪音 ======
@@ -676,9 +770,11 @@ class PomodoroTimer {
         this.createAmbientSound(soundName, volume);
 
         // 更新UI
-        document.querySelectorAll('.ambient-btn').forEach(btn => {
+        document.querySelectorAll('.sound-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.sound === soundName);
         });
+        // 🎵 按钮脉动提示
+        document.getElementById('btn-sound')?.classList.add('playing');
     }
 
     createAmbientSound(type, volume) {
@@ -919,7 +1015,9 @@ class PomodoroTimer {
             this.ambientGainNode = null;
         }
         this.activeAmbient = null;
-        document.querySelectorAll('.ambient-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.sound-btn').forEach(btn => btn.classList.remove('active'));
+        // 清除 🎵 按钮脉动
+        document.getElementById('btn-sound')?.classList.remove('playing');
     }
 
     // ====== 统计图表 ======
@@ -944,17 +1042,20 @@ class PomodoroTimer {
         const canvas = document.getElementById('stats-chart');
         if (!canvas) return;
 
+        const parent = document.getElementById('chart-area');
+        if (!parent) return;
+
         const ctx = canvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.parentElement.getBoundingClientRect();
+        const rect = parent.getBoundingClientRect();
 
         canvas.width = rect.width * dpr;
-        canvas.height = 200 * dpr;
+        canvas.height = 140 * dpr;
         ctx.scale(dpr, dpr);
 
         const w = rect.width;
-        const h = 200;
-        const padding = { top: 20, right: 16, bottom: 30, left: 36 };
+        const h = 140;
+        const padding = { top: 18, right: 12, bottom: 24, left: 30 };
 
         // 清空
         ctx.clearRect(0, 0, w, h);
@@ -1124,11 +1225,11 @@ class PomodoroTimer {
             const val = this.history[key]?.pomodoros || 0;
 
             const cell = document.createElement('div');
-            cell.className = 'heatmap-cell';
+            cell.className = 'heat-cell';
 
             if (val > 0) {
-                const level = val >= maxVal * 0.75 ? 4 : val >= maxVal * 0.5 ? 3 : val >= maxVal * 0.25 ? 2 : 1;
-                cell.classList.add(`level-${level}`);
+                const level = val >= maxVal * 0.75 ? 'l4' : val >= maxVal * 0.5 ? 'l3' : val >= maxVal * 0.25 ? 'l2' : 'l1';
+                cell.classList.add(level);
             }
 
             cell.title = `${key}: ${val} 个番茄`;
@@ -1147,30 +1248,30 @@ class PomodoroTimer {
             .slice(0, range === 'week' ? 7 : range === 'month' ? 14 : 1);
 
         if (entries.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-secondary);padding:16px;text-align:center;">暂无历史记录</p>';
+            container.innerHTML = '<p class="empty-hist">暂无历史记录</p>';
             return;
         }
 
         entries.forEach(([dateKey, data]) => {
             const dayDiv = document.createElement('div');
-            dayDiv.className = 'history-day';
+            dayDiv.className = 'h-day';
 
             const date = new Date(dateKey + 'T00:00:00');
             const dateStr = `${date.getMonth() + 1}月${date.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][date.getDay()]}`;
 
             dayDiv.innerHTML = `
-                <div class="history-date">${dateStr} — 🍅${data.pomodoros} · ${Math.floor(data.focusMinutes)}分钟</div>
-                <div class="history-items"></div>
+                <div class="h-date">${dateStr} — 🍅${data.pomodoros} · ${Math.floor(data.focusMinutes)}分钟</div>
+                <div class="h-chips"></div>
             `;
             container.appendChild(dayDiv);
 
-            const itemsDiv = dayDiv.querySelector('.history-items');
+            const chipsDiv = dayDiv.querySelector('.h-chips');
             if (data.tasksDetail && data.tasksDetail.length > 0) {
                 data.tasksDetail.forEach(detail => {
                     const chip = document.createElement('span');
-                    chip.className = 'history-chip';
-                    chip.innerHTML = `${this.escapeHtml(detail.taskText)}<span class="chip-count">×${detail.count}</span>`;
-                    itemsDiv.appendChild(chip);
+                    chip.className = 'h-chip';
+                    chip.innerHTML = `${this.escapeHtml(detail.taskText)}<b>×${detail.count}</b>`;
+                    chipsDiv.appendChild(chip);
                 });
             }
         });
@@ -1260,8 +1361,9 @@ class PomodoroTimer {
             const acEl = document.getElementById('auto-continue');
             if(acEl) acEl.checked = this.autoContinue;
 
-            this.el.goalTarget.textContent = this.dailyGoal;
-            this.switchToMode(this.currentMode);
+            // 同步顶部状态栏
+            this.updateStreak();
+            this.updateGoalProgress();
 
             if(d.isRunning){ /* 不自动恢复运行 */ }
 
@@ -1286,9 +1388,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-            const activeTab = document.querySelector('.tab-content.active');
-            if(activeTab && activeTab.id === 'tab-stats'){
-                const activeRange = document.querySelector('.range-btn.active');
+            const activeTab = document.querySelector('.tab-panel.active');
+            if(activeTab && activeTab.id === 'panel-stats'){
+                const activeRange = document.querySelector('.r-tab.active');
                 window.timer.renderStats(activeRange?.dataset.range || 'today');
             }
         }, 250);
