@@ -104,7 +104,7 @@ html {
 body {
     background: var(--c-bg);
     color: var(--c-text);
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
@@ -281,10 +281,9 @@ body {
 /* ========== Main Content ========== */
 .main-content {
     flex: 1;
-    max-width: 480px;
     width: 100%;
-    margin: 0 auto;
-    padding: 16px 16px 96px;
+    padding: 20px 24px 16px;
+    overflow-y: auto;
 }
 
 .tab-panel {
@@ -307,20 +306,48 @@ body {
     }
 }
 
-/* ====== Hero / Timer Card ====== */
+/* ====== Hero / Timer (Full-Screen Immersive) ====== */
 .hero-card {
-    background: linear-gradient(145deg, var(--c-surface), var(--c-surface-raised));
-    border-radius: var(--r-xl);
-    padding: 28px 24px 22px;
-    border: 1px solid var(--c-border);
-    box-shadow: 0 8px 40px var(--c-shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 0 8px;
+    position: relative;
+}
+
+/* 背景装饰光晕 */
+.hero-card::before {
+    content: '';
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(231,76,60,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+body.running .hero-card::before {
+    background: radial-gradient(circle, rgba(231,76,60,0.14) 0%, transparent 70%);
+    animation: heroGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes heroGlow {
+    from { transform: translateX(-50%) scale(1); opacity: 1; }
+    to { transform: translateX(-50%) scale(1.2); opacity: 0.7; }
 }
 
 .mode-pills {
     display: flex;
     justify-content: center;
-    gap: 6px;
-    margin-bottom: 28px;
+    gap: 8px;
+    margin-bottom: clamp(14px, 3.5vh, 28px);
+    position: relative;
+    z-index: 1;
 }
 
 .mode-pill {
@@ -356,9 +383,10 @@ body {
 
 .timer-ring {
     position: relative;
-    width: 210px;
-    height: 210px;
-    margin: 0 auto 30px;
+    width: clamp(200px, 45vmin, 280px);
+    height: clamp(200px, 45vmin, 280px);
+    margin: 0 auto clamp(10px, 2vh, 20px);
+    z-index: 1;
 }
 
 .ring-svg {
@@ -369,14 +397,14 @@ body {
 
 .ring-bg {
     fill: none;
-    stroke: rgba(255,255,255,0.04);
-    stroke-width: 6;
+    stroke: var(--c-border);
+    stroke-width: 5;
 }
 
 .ring-progress {
     fill: none;
     stroke: var(--c-primary);
-    stroke-width: 6;
+    stroke-width: 5;
     stroke-linecap: round;
     stroke-dasharray: 741;
     stroke-dashoffset: 0;
@@ -409,17 +437,17 @@ body.running .ring-progress {
 }
 
 .time-text {
-    font-size: 3rem;
+    font-size: clamp(2.4rem, 8vmin, 4rem);
     font-weight: 800;
-    letter-spacing: 3px;
+    letter-spacing: clamp(2px, 0.5vw, 4px);
     font-variant-numeric: tabular-nums;
     line-height: 1;
 }
 
 .mode-label {
-    font-size: 0.82rem;
+    font-size: clamp(0.75rem, 2vmin, 0.95rem);
     color: var(--c-text-muted);
-    margin-top: 6px;
+    margin-top: clamp(3px, 0.8vh, 6px);
     font-weight: 500;
 }
 
@@ -443,8 +471,10 @@ body.running .ring-progress {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 18px;
-    margin-bottom: 26px;
+    gap: clamp(16px, 4vw, 28px);
+    margin-bottom: clamp(14px, 3vh, 24px);
+    position: relative;
+    z-index: 1;
 }
 
 .ctrl-btn {
@@ -457,8 +487,8 @@ body.running .ring-progress {
 }
 
 .icon-only {
-    width: 44px;
-    height: 44px;
+    width: clamp(44px, 10vmin, 54px);
+    height: clamp(44px, 10vmin, 54px);
     border-radius: 50%;
     background: var(--c-surface-raised);
     color: var(--c-text-muted);
@@ -471,8 +501,8 @@ body.running .ring-progress {
 }
 
 .main-btn {
-    width: 68px;
-    height: 68px;
+    width: clamp(68px, 16vmin, 84px);
+    height: clamp(68px, 16vmin, 84px);
     border-radius: 50%;
     background: linear-gradient(135deg, var(--c-primary-soft), var(--c-primary));
     color: #fff;
@@ -493,9 +523,13 @@ body.running .ring-progress {
     justify-content: center;
     align-items: center;
     gap: 4px;
-    padding: 14px 0;
+    padding: 12px 0 0;
     border-top: 1px solid var(--c-border);
-    margin-bottom: 8px;
+    margin-top: auto;
+    width: 100%;
+    max-width: 360px;
+    position: relative;
+    z-index: 1;
 }
 
 .mini-stat {
@@ -786,6 +820,8 @@ body.running .ring-progress {
     border-radius: var(--r-xl);
     border: 1px solid var(--c-border);
     box-shadow: 0 8px 40px var(--c-shadow);
+    max-width: 480px;
+    margin: 0 auto;
 }
 
 .task-list {
@@ -963,6 +999,8 @@ body.running .ring-progress {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    max-width: 480px;
+    margin: 0 auto;
 }
 
 .range-tabs {
@@ -1297,15 +1335,15 @@ body.running .ring-progress {
 /* ====== Responsive ====== */
 @media (max-width: 420px) {
     body { font-size: 15px; }
-    .main-content { padding: 12px 12px 88px; }
+    .main-content { padding: 12px 12px 12px; }
     .top-bar { padding: 12px 16px; }
     .top-bar h1 { font-size: 1.05rem; }
-    .hero-card { padding: 22px 18px 18px; }
-    .timer-ring { width: 185px; height: 185px; }
-    .time-text { font-size: 2.6rem; }
-    .main-btn { width: 60px; height: 60px; }
-    .icon-only { width: 40px; height: 40px; }
-    .mode-pill { padding: 6px 14px; font-size: 0.76rem; }
+    .hero-card { padding: 8px 0 4px; }
+    .timer-ring { width: clamp(170px, 42vmin, 240px); height: clamp(170px, 42vmin, 240px); }
+    .main-btn { width: clamp(60px, 14vmin, 74px); height: clamp(60px, 14vmin, 74px); }
+    .icon-only { width: clamp(40px, 9vmin, 48px); height: clamp(40px, 9vmin, 48px); }
+    .mode-pill { padding: 6px 16px; font-size: 0.76rem; }
+    .mini-stats { max-width: 300px; }
     .mini-stat strong { font-size: 1.1rem; }
     .sound-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .settings-grid { grid-template-columns: 1fr; }
@@ -1316,8 +1354,16 @@ body.running .ring-progress {
     .float-panel { right: 10px; width: calc(100vw - 20px); }
 }
 
+@media (min-width: 768px) {
+    .main-content {
+        max-width: 540px;
+        margin: 0 auto;
+    }
+    .bottom-nav { max-width: 540px; }
+}
+
 /* Safe Area */
 @supports (padding: env(safe-area-inset-bottom)) {
     .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
-    .main-content { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+    .main-content { padding-bottom: 16px; }
 }
